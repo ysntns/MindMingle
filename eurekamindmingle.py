@@ -1,6 +1,6 @@
 from __1lib__ import *
 from sklearn.feature_extraction.text import TfidfVectorizer
-
+import matplotlib.pyplot as plt
 
 # Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
 netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
