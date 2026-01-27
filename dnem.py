@@ -45,14 +45,13 @@ def calculate_mood(feeling_score, activity_score, energy_level, social_interacti
 
 def filter_contents(data, mood):
     if mood == "Çok Mutlu" or mood == "Mutlu":
-        filtered_data = data[data['listed_in'].str.contains("Comedy") | data['listed_in'].str.contains("Animation")]
+        filtered_data = data[data['listed_in'].str.contains("Comedy|Animation")]
     elif mood == "Üzgün":
-        filtered_data = data[data['listed_in'].str.contains("Drama") | data['listed_in'].str.contains("Romantic") | data['listed_in'].str.contains("Comedy")]
+        filtered_data = data[data['listed_in'].str.contains("Drama|Romantic|Comedy")]
     elif mood == "Keyifli":
-        filtered_data = data[data['listed_in'].str.contains("Family") | data['listed_in'].str.contains("Documentary") | data['listed_in'].str.contains("Animation")]
+        filtered_data = data[data['listed_in'].str.contains("Family|Documentary|Animation")]
     elif mood == "Melankolik":
-        filtered_data = data[
-            data['listed_in'].str.contains("Art House") | data['listed_in'].str.contains("Independent") | data['listed_in'].str.contains("Drama")]
+        filtered_data = data[data['listed_in'].str.contains("Art House|Independent|Drama")]
     return filtered_data.sample(n=min(5, len(filtered_data)))
 
 
