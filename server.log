@@ -1,8 +1,0 @@
-INFO:     Started server process [2862]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-Loading data from /app/MindMingleApp/backend/data...
-Netflix data loaded.
-Spotify data loaded.
-INFO:     127.0.0.1:44860 - "POST /recommend HTTP/1.1" 200 OK
