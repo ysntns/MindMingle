@@ -160,8 +160,7 @@ with st.form("mood_form"):
         # Önerilen Filmler
         st.subheader("Sizin İçin Önerilen Filmler:")
         if not filtered_films.empty:
-            for index, row in filtered_films.iterrows():
-                st.write(f"{row['title']} - {row['listed_in']}")
+            st.dataframe(filtered_films[['title', 'listed_in']])
         else:
             st.write("Üzgünüz, bu ruh halinize uygun film bulunamadı.")
 
