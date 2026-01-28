@@ -115,15 +115,13 @@ plt.show()
 #######################################################################################################################
 
 #Growing_Stress ve Changes_Habits arasındaki etkileşim.
-def create_stress_response_feature(row):
-    if row['Growing_Stress'] == 'Yes' and row['Changes_Habits'] in ['Yes', 'Maybe']:
-        return 'High'
-    elif row['Growing_Stress'] == 'Maybe' or row['Changes_Habits'] == 'Maybe':
-        return 'Medium'
-    else:
-        return 'Low'
-
-df['Stress_Response'] = df.apply(create_stress_response_feature, axis=1)
+# Optimized vectorized implementation
+conditions = [
+    (df['Growing_Stress'] == 'Yes') & (df['Changes_Habits'].isin(['Yes', 'Maybe'])),
+    (df['Growing_Stress'] == 'Maybe') | (df['Changes_Habits'] == 'Maybe')
+]
+choices = ['High', 'Medium']
+df['Stress_Response'] = np.select(conditions, choices, default='Low')
 
 
 
