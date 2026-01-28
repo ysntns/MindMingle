@@ -297,18 +297,27 @@ def grab_col_names(dataframe, cat_th=10, car_th=20):
 
     """
 
-    # cat_cols, cat_but_car
-    cat_cols = [col for col in dataframe.columns if dataframe[col].dtypes == "O"]
-    num_but_cat = [col for col in dataframe.columns if dataframe[col].nunique() < cat_th and
-                   dataframe[col].dtypes != "O"]
-    cat_but_car = [col for col in dataframe.columns if dataframe[col].nunique() > car_th and
-                   dataframe[col].dtypes == "O"]
-    cat_cols = cat_cols + num_but_cat
-    cat_cols = [col for col in cat_cols if col not in cat_but_car]
+    cat_cols = []
+    num_cols = []
+    cat_but_car = []
+    num_but_cat = []
 
-    # num_cols
-    num_cols = [col for col in dataframe.columns if dataframe[col].dtypes != "O"]
-    num_cols = [col for col in num_cols if col not in num_but_cat]
+    for col in dataframe.columns:
+        col_dtypes = dataframe[col].dtypes
+        col_nunique = dataframe[col].nunique()
+
+        if col_dtypes == "O":
+            if col_nunique > car_th:
+                cat_but_car.append(col)
+            else:
+                cat_cols.append(col)
+        else:
+            if col_nunique < cat_th:
+                num_but_cat.append(col)
+            else:
+                num_cols.append(col)
+
+    cat_cols = cat_cols + num_but_cat
 
     print(f"Observations: {dataframe.shape[0]}")
     print(f"Variables: {dataframe.shape[1]}")
@@ -319,17 +328,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=20):
     return cat_cols, num_cols, cat_but_car
 
 
-def grab_col_names(dataframe, cat_th=10, car_th=20, exclude_cols=None):
-    if exclude_cols is None:
-        exclude_cols = []
-
-    cat_cols = [col for col in dataframe.columns if dataframe[col].dtypes == "O" and col not in exclude_cols]
-    num_but_cat = [col for col in dataframe.columns if
-                   dataframe[col].nunique() < cat_th and dataframe[col].dtypes != "O"]
-    cat_but_car = [col for col in dataframe.columns if
-                   dataframe[col].nunique() > car_th and dataframe[col].dtypes == "O"]
-
-    return cat_cols, num_but_cat, cat_but_car
 
 
 def grab_outliers(dataframe, col_name, index=False):
@@ -362,11 +360,6 @@ def grab_outliers(dataframe, col_name, index=False):
         return outlier_index
 
 
-def grab_col_names(df, cat_th=10, car_th=20):
-    cat_cols = [col for col in df.columns if df[col].dtypes == "object"]
-    num_but_cat = [col for col in df.columns if df[col].nunique() < cat_th and df[col].dtypes != "object"]
-    cat_but_car = [col for col in df.columns if df[col].nunique() > car_th and df[col].dtypes != "object"]
-    return cat_cols, num_but_cat, cat_but_car
 
 
 def remove_outlier(dataframe, col_name):
