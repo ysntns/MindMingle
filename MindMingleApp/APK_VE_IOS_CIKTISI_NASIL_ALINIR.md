@@ -20,11 +20,20 @@ Eğer Android Studio kurmakla uğraşmak istemiyorsanız bu yöntemi kullanın.
     npm install -g eas-cli
     eas login
     ```
-4.  APK oluşturun:
+
+4.  **PROJEYİ BAŞLATMA (Çok Önemli Adım):**
+    Aşağıdaki komutu yazın ve sorulara cevap verin:
+    ```bash
+    eas init
+    ```
+    *(Size "Would you like to automatically create an EAS Project?" diye sorarsa "Yes" deyin.)*
+
+5.  **APK OLUŞTURMA:**
     ```bash
     eas build -p android --profile preview
     ```
-5.  İşlem bitince terminalde çıkan **linke tıklayıp** APK dosyasını indirin.
+
+6.  İşlem bitince terminalde çıkan **linke tıklayıp** APK dosyasını indirin.
 
 ---
 
