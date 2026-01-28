@@ -1,71 +1,56 @@
 # MindMingleApp - APK ve iOS Çıktısı Nasıl Alınır?
 
-Hazırladığımız bu projeden somut bir mobil uygulama dosyası (.apk) elde etmek için **Expo Application Services (EAS)** kullanacağız. Bu işlem kodları buluta gönderir, orada derler ve size indirilebilir bir link verir.
+Hazırladığımız bu projeden somut bir mobil uygulama dosyası (.apk) elde etmek için iki yönteminiz var:
+1.  **Bulut Yöntemi (EAS):** En kolayıdır, kurulum gerektirmez.
+2.  **Yerel Yöntem (Android Studio):** Bilgisayarınızda Android Studio yüklüyse en hızlısıdır.
 
-Aşağıdaki adımları sırasıyla uygulayın:
+---
 
-## Hazırlık
+## Yöntem 1: Bulut ile APK Oluşturma (Önerilen)
 
-1.  **Expo Hesabı Açın:**
-    [https://expo.dev/signup](https://expo.dev/signup) adresinden ücretsiz bir hesap oluşturun ve giriş yapın.
+Eğer Android Studio kurmakla uğraşmak istemiyorsanız bu yöntemi kullanın.
 
-2.  **EAS CLI Yükleyin:**
-    Terminalde şu komutu çalıştırarak gerekli aracı yükleyin:
-    ```bash
-    npm install -g eas-cli
-    ```
-
-3.  **Giriş Yapın:**
-    Terminalde şu komutu yazın ve Expo hesap bilgilerinizle giriş yapın:
-    ```bash
-    eas login
-    ```
-
-## 1. Android İçin APK Oluşturma (En Kolay Yöntem)
-
-Eğer uygulamanızı hemen telefonunuza atıp denemek istiyorsanız (Play Store'a yüklemeden), "Preview" (Önizleme) modunu kullanacağız.
-
-1.  Terminalde proje klasörüne gidin:
+1.  [https://expo.dev/signup](https://expo.dev/signup) adresinden ücretsiz hesap açın.
+2.  Terminalden projeye gidin:
     ```bash
     cd MindMingleApp/mobile
     ```
-
-2.  Projeyi Expo projesi olarak başlatın (Eğer sorarsa):
+3.  EAS aracını yükleyip giriş yapın:
     ```bash
-    npx expo install expo-updates
-    eas build:configure
+    npm install -g eas-cli
+    eas login
     ```
-    *(Size "Which platforms?" diye sorarsa "All" veya "Android" seçin.)*
-
-3.  **BÜYÜK AN:** APK oluşturma komutunu verin:
+4.  APK oluşturun:
     ```bash
     eas build -p android --profile preview
     ```
+5.  İşlem bitince terminalde çıkan **linke tıklayıp** APK dosyasını indirin.
 
-4.  **Bekleyin ve İndirin:**
-    Komut çalıştıktan sonra kodlarınız Expo sunucularına yüklenecek ve sıraya alınacaktır. İşlem bittiğinde terminalde size bir **QR Kod** ve bir **Link** verilecek.
-    *   Linke tıklayarak `.apk` dosyasını bilgisayarınıza indirin.
-    *   Dosyayı telefonunuza atıp yükleyin.
-    *   **Tebrikler! MindMingleApp telefonunuzda.** 🎉
+---
 
-## 2. iOS İçin Çıktı Alma
+## Yöntem 2: Android Studio ile APK Oluşturma (Yerel)
 
-Apple cihazlara uygulama yüklemek Android kadar kolay değildir (Apple'ın güvenlik politikaları nedeniyle).
+Projenizin içinde hazır bir **Android Kaynak Kodu** (`android` klasörü) oluşturduk.
 
-*   **Simülatör İçin:**
-    ```bash
-    eas build -p ios --profile preview
-    ```
-    Bu komut size Simülatörde çalıştırabileceğiniz bir dosya verir.
+1.  **Android Studio**'yu açın.
+2.  "Open" diyerek `MindMingleApp/mobile/android` klasörünü seçin.
+3.  Projenin senkronize olmasını bekleyin (Gradle Sync).
+4.  Üst menüden **Build > Build Bundle(s) / APK(s) > Build APK(s)** yolunu izleyin.
+5.  Derleme bittiğinde sağ altta çıkan bildirime tıklayarak APK dosyasının olduğu klasörü açın (`debug` klasörü içinde olacaktır).
+6.  Bu dosyayı (`app-debug.apk`) telefonunuza atıp kurabilirsiniz.
 
-*   **Gerçek Cihaz İçin:**
-    Gerçek bir iPhone'a yüklemek için Apple Developer Hesabı'na (yıllık $99) ihtiyacınız vardır. Hesabınız varsa `eas build -p ios --profile production` diyerek ilerleyebilirsiniz.
+---
 
 ## Önemli Not: Backend Bağlantısı
 
-Unutmayın, mobil uygulama sadece bir "kabuktur". Verileri ve önerileri alabilmesi için **Backend Sunucusunun (Python)** çalışıyor olması gerekir.
+Uygulamanın çalışması için **Python Sunucusu** açık olmalıdır.
 
-1.  Uygulamayı telefonunuzda açtığınızda, bilgisayarınızdaki Python sunucusuna erişebilmesi için `mobile/App.js` dosyasındaki IP adresinin doğru olduğundan emin olun.
-2.  Bilgisayarınız ve telefonunuz aynı Wi-Fi ağında olmalıdır.
+1.  Backend klasörüne gidin:
+    ```bash
+    cd MindMingleApp/backend
+    pip install -r requirements.txt
+    uvicorn main:app --host 0.0.0.0 --port 8000
+    ```
+2.  Mobil uygulamanın bu sunucuya erişebilmesi için `mobile/App.js` içindeki IP adresini kendi bilgisayarınızın IP adresiyle değiştirdiğinizden emin olun (Örn: `192.168.1.35`).
 
 İyi çalışmalar!

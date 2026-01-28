@@ -18,6 +18,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.mindmingle.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
