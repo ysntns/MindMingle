@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Dimensions, StatusBar, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Dimensions, StatusBar, Alert } from 'react-native';
 import Slider from '@react-native-community/slider';
 import axios from 'axios';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 // API URL (Emülatör veya Gerçek Cihaz IP'si)
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8000/recommend' : 'http://localhost:8000/recommend';
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
 
 const { width } = Dimensions.get('window');
 
@@ -15,13 +16,14 @@ export default function App() {
   const [energy, setEnergy] = useState(5);
   const [social, setSocial] = useState(5);
   const [loading, setLoading] = useState(false);
+  const [analyzingFace, setAnalyzingFace] = useState(false);
   const [result, setResult] = useState(null);
 
   const handleAnalyze = async () => {
     setLoading(true);
     setResult(null);
     try {
-      const response = await axios.post(API_URL, {
+      const response = await axios.post(`${API_URL}/recommend`, {
         feeling,
         activity,
         energy,
@@ -34,8 +36,68 @@ export default function App() {
       }, 800);
     } catch (error) {
       console.error(error);
-      alert("Sunucuya bağlanılamadı. Backend'i kontrol edin.");
+      Alert.alert("Hata", "Sunucuya bağlanılamadı. Backend'i kontrol edin.");
       setLoading(false);
+    }
+  };
+
+  const pickImage = async () => {
+    // Kamera izni iste
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Üzgünüz', 'Kamerayı kullanmak için izne ihtiyacımız var.');
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      uploadImage(result.assets[0]);
+    }
+  };
+
+  const uploadImage = async (asset) => {
+    setAnalyzingFace(true);
+    const formData = new FormData();
+    formData.append('file', {
+      uri: asset.uri,
+      name: 'face.jpg',
+      type: 'image/jpeg',
+    });
+
+    try {
+      const response = await axios.post(`${API_URL}/analyze-face`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const data = response.data;
+      if (data.error) {
+        Alert.alert("Hata", "Yüz algılanamadı veya bir hata oluştu.");
+      } else {
+        Alert.alert("Analiz Tamamlandı", `Tespit edilen duygu: ${data.mapped_mood}`);
+        // Slider'ı güncelle
+        setFeeling(data.feeling_score);
+        // Diğer değerleri de duyguya göre biraz rastgele ama tutarlı ayarla
+        if (data.mapped_mood === "Mutlu" || data.mapped_mood === "Çok Mutlu") {
+            setEnergy(Math.min(10, Math.floor(Math.random() * 3) + 7)); // 7-9
+            setSocial(Math.min(10, Math.floor(Math.random() * 3) + 6));
+        } else if (data.mapped_mood === "Üzgün" || data.mapped_mood === "Melankolik") {
+            setEnergy(Math.max(1, Math.floor(Math.random() * 3) + 2)); // 2-4
+            setSocial(Math.max(1, Math.floor(Math.random() * 3) + 1));
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Hata", "Görüntü yüklenirken hata oluştu.");
+    } finally {
+      setAnalyzingFace(false);
     }
   };
 
@@ -44,7 +106,7 @@ export default function App() {
       case 'Çok Mutlu': return 'emoticon-excited-outline';
       case 'Mutlu': return 'emoticon-happy-outline';
       case 'Keyifli': return 'emoticon-cool-outline';
-      case 'Melankolik': return 'weather-partly-rainy'; // cloud-rain yerine weather-partly-rainy kullanıldı (MaterialCommunityIcons)
+      case 'Melankolik': return 'weather-partly-rainy';
       case 'Üzgün': return 'emoticon-sad-outline';
       default: return 'emoticon-neutral-outline';
     }
@@ -52,11 +114,11 @@ export default function App() {
 
   const getMoodColor = (mood) => {
     switch (mood) {
-      case 'Çok Mutlu': return '#FFD700'; // Gold
-      case 'Mutlu': return '#4CAF50'; // Green
-      case 'Keyifli': return '#2196F3'; // Blue
-      case 'Melankolik': return '#9C27B0'; // Purple
-      case 'Üzgün': return '#607D8B'; // Blue Grey
+      case 'Çok Mutlu': return '#FFD700';
+      case 'Mutlu': return '#4CAF50';
+      case 'Keyifli': return '#2196F3';
+      case 'Melankolik': return '#9C27B0';
+      case 'Üzgün': return '#607D8B';
       default: return '#4CAF50';
     }
   };
@@ -93,7 +155,7 @@ export default function App() {
       {/* HEADER */}
       <View style={styles.header}>
         <MaterialCommunityIcons name="brain" size={40} color="#fff" />
-        <Text style={styles.headerTitle}>MindMingle</Text>
+        <Text style={styles.headerTitle}>MindMingle AI</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -102,14 +164,26 @@ export default function App() {
           <View style={styles.introContainer}>
             <Text style={styles.introTitle}>Hoş Geldiniz 👋</Text>
             <Text style={styles.introText}>
-              Bugün nasıl hissettiğinizi analiz edelim ve size en uygun film & müzik önerilerini sunalım.
+              İster manuel puanlayın, ister yapay zeka yüzünüzü okusun.
             </Text>
           </View>
         ) : null}
 
+        {/* AI CAMERA BUTTON */}
+        <TouchableOpacity style={styles.cameraButton} onPress={pickImage} disabled={analyzingFace}>
+             {analyzingFace ? (
+                 <ActivityIndicator color="#FFF" />
+             ) : (
+                 <>
+                    <Ionicons name="camera-outline" size={24} color="#fff" style={{marginRight: 10}} />
+                    <Text style={styles.cameraButtonText}>YÜZÜMÜ ANALİZ ET</Text>
+                 </>
+             )}
+        </TouchableOpacity>
+
         {/* FORM SECTION */}
         <View style={styles.card}>
-          <Text style={styles.sectionHeader}>Duygu Durum Analizi</Text>
+          <Text style={styles.sectionHeader}>Duygu Durum Ayarları</Text>
           {renderCustomSlider("Mutluluk", "happy-outline", feeling, setFeeling, "Düşük", "Yüksek")}
           {renderCustomSlider("Aktivite", "bicycle-outline", activity, setActivity, "Pasif", "Aktif")}
           {renderCustomSlider("Enerji", "battery-charging-outline", energy, setEnergy, "Yorgun", "Enerjik")}
@@ -187,7 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F7FA',
   },
   header: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#1565C0', // Daha teknolojik bir mavi
     height: 100,
     paddingTop: 40,
     flexDirection: 'row',
@@ -226,6 +300,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  cameraButton: {
+    backgroundColor: '#FF6F00', // Turuncu dikkat çekici buton
+    paddingVertical: 12,
+    borderRadius: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    elevation: 4,
+    shadowColor: '#FF6F00',
+    shadowOpacity: 0.4,
+    shadowOffset: {width: 0, height: 3},
+  },
+  cameraButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 15,
@@ -263,7 +355,7 @@ const styles = StyleSheet.create({
   valueText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#1565C0',
   },
   minMaxRow: {
     flexDirection: 'row',
@@ -275,18 +367,18 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   button: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#1565C0',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
     elevation: 3,
-    shadowColor: '#2E7D32',
+    shadowColor: '#1565C0',
     shadowOpacity: 0.3,
     shadowOffset: {width: 0, height: 4},
   },
   buttonDisabled: {
-    backgroundColor: '#A5D6A7',
+    backgroundColor: '#90CAF9',
   },
   buttonText: {
     color: '#FFF',

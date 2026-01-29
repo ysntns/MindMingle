@@ -1,10 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 import os
+import cv2
+from fer import FER
+import tempfile
+import shutil
 
 app = FastAPI()
 
@@ -16,9 +20,10 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 netflix_data = None
 spotify_data = None
 spotify_normalized_features = None
+detector = None
 
 def load_data():
-    global netflix_data, spotify_data, spotify_normalized_features
+    global netflix_data, spotify_data, spotify_normalized_features, detector
     try:
         print(f"Loading data from {DATA_DIR}...")
         netflix_path = os.path.join(DATA_DIR, 'netflix.csv')
@@ -44,6 +49,11 @@ def load_data():
                 print("Warning: Missing columns in Spotify data.")
         else:
              print(f"File not found: {spotify_path}")
+
+        # FER Dedektörünü başlat (MTCNN yerine varsayılan opencv haarcascade kullanıyoruz, daha hafif)
+        print("Loading Face Detector...")
+        detector = FER()
+        print("Face Detector loaded.")
 
     except Exception as e:
         print(f"Error loading data: {e}")
@@ -99,45 +109,83 @@ def recommend_music(data, features, mood, num_recommendations=5):
     if len(features) == 0:
         return pd.DataFrame()
 
-    # Ruh haline göre uygun "seed" (başlangıç) şarkılarını filtrele
-    # valence_% (mutluluk), energy_% (enerji)
-
     seed_indices = []
 
     if mood in ["Çok Mutlu", "Mutlu"]:
-        # Mutlu şarkılar: Yüksek valence, Yüksek enerji
         subset = data[(data['valence_%'] > 60) & (data['energy_%'] > 50)]
     elif mood == "Üzgün":
-        # Üzgün şarkılar: Düşük valence
         subset = data[data['valence_%'] < 40]
     elif mood == "Keyifli":
-        # Keyifli: Dengeli
         subset = data[(data['valence_%'] >= 40) & (data['valence_%'] <= 70)]
     elif mood == "Melankolik":
-        # Melankolik: Düşük enerji, düşük valence
         subset = data[(data['energy_%'] < 50) & (data['valence_%'] < 50)]
     else:
         subset = data
 
     if not subset.empty:
-        # Filtrelenen şarkılardan rastgele birini seç (seed song)
         seed_song = subset.sample(n=1)
         seed_index = seed_song.index[0]
     else:
-        # Filtreye uyan yoksa tamamen rastgele
         seed_index = np.random.randint(0, len(features))
 
-    # Seçilen şarkıya en benzerleri bul (Cosine Similarity)
-    # Burada features matrisindeki seed_index'i kullanıyoruz
     cosine_similarities = cosine_similarity(features[seed_index:seed_index + 1], features)
-
-    # Benzerlik skorlarına göre sırala (kendisi dahil en çok benzeyenler)
     similar_indices = cosine_similarities.argsort().flatten()[-(num_recommendations + 1):-1]
-
-    # Sonuçları tersten sırala (en benzeyen en başta olsun)
     similar_indices = similar_indices[::-1]
 
     return data.iloc[similar_indices]
+
+@app.post("/analyze-face")
+async def analyze_face(file: UploadFile = File(...)):
+    try:
+        # Geçici dosya oluştur
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image:
+            shutil.copyfileobj(file.file, temp_image)
+            temp_image_path = temp_image.name
+
+        # Resmi oku
+        image = cv2.imread(temp_image_path)
+
+        # Dosyayı sil (artık bellekte)
+        os.remove(temp_image_path)
+
+        if image is None:
+             return {"error": "Resim okunamadı"}
+
+        # FER ile analiz et
+        emotion, score = detector.top_emotion(image)
+
+        if not emotion:
+            return {"mood": "Nötr", "mapped_mood": "Keyifli", "feeling_score": 5}
+
+        # Duygu eşleştirmesi
+        mapped_mood = "Keyifli"
+        feeling_score = 5
+
+        if emotion == "happy":
+            mapped_mood = "Mutlu"
+            feeling_score = 8
+        elif emotion == "sad":
+            mapped_mood = "Üzgün"
+            feeling_score = 3
+        elif emotion == "angry" or emotion == "disgust" or emotion == "fear":
+             mapped_mood = "Melankolik"
+             feeling_score = 2
+        elif emotion == "neutral":
+             mapped_mood = "Keyifli"
+             feeling_score = 6
+        elif emotion == "surprise":
+             mapped_mood = "Çok Mutlu"
+             feeling_score = 9
+
+        return {
+            "mood": emotion,
+            "mapped_mood": mapped_mood,
+            "feeling_score": feeling_score
+        }
+
+    except Exception as e:
+        print(f"Face analysis error: {e}")
+        return {"error": str(e)}
 
 @app.post("/recommend")
 def get_recommendations(input_data: MoodInput):

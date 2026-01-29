@@ -6,6 +6,18 @@ Hazırladığımız bu projeden somut bir mobil uygulama dosyası (.apk) elde et
 
 ---
 
+## ⚠️ ÖNEMLİ: Yeni Özellik Kurulumu
+
+Projeye **Yüz Tanıma (AI)** özelliği eklendiği için backend kütüphanelerini güncellemeniz GEREKMEKTEDİR.
+
+Backend klasöründe şu komutu çalıştırın:
+```bash
+pip install -r requirements.txt
+```
+*(Bu işlem biraz uzun sürebilir çünkü yüz tanıma modellerini indirir.)*
+
+---
+
 ## Yöntem 1: Bulut ile APK Oluşturma (Önerilen)
 
 Eğer Android Studio kurmakla uğraşmak istemiyorsanız bu yöntemi kullanın.
@@ -21,8 +33,7 @@ Eğer Android Studio kurmakla uğraşmak istemiyorsanız bu yöntemi kullanın.
     eas login
     ```
 
-4.  **PROJEYİ BAŞLATMA (Çok Önemli Adım):**
-    Aşağıdaki komutu yazın ve sorulara cevap verin:
+4.  **PROJEYİ BAŞLATMA:**
     ```bash
     eas init
     ```
@@ -51,9 +62,9 @@ Projenizin içinde hazır bir **Android Kaynak Kodu** (`android` klasörü) olu�
 2.  **Android Studio**'yu açın.
 3.  "Open" diyerek `MindMingleApp/mobile/android` klasörünü seçin.
 4.  Projenin senkronize olmasını bekleyin (Gradle Sync).
-4.  Üst menüden **Build > Build Bundle(s) / APK(s) > Build APK(s)** yolunu izleyin.
-5.  Derleme bittiğinde sağ altta çıkan bildirime tıklayarak APK dosyasının olduğu klasörü açın (`debug` klasörü içinde olacaktır).
-6.  Bu dosyayı (`app-debug.apk`) telefonunuza atıp kurabilirsiniz.
+5.  Üst menüden **Build > Build Bundle(s) / APK(s) > Build APK(s)** yolunu izleyin.
+6.  Derleme bittiğinde sağ altta çıkan bildirime tıklayarak APK dosyasının olduğu klasörü açın (`debug` klasörü içinde olacaktır).
+7.  Bu dosyayı (`app-debug.apk`) telefonunuza atıp kurabilirsiniz.
 
 ---
 
@@ -64,7 +75,6 @@ Uygulamanın çalışması için **Python Sunucusu** açık olmalıdır.
 1.  Backend klasörüne gidin:
     ```bash
     cd MindMingleApp/backend
-    pip install -r requirements.txt
     uvicorn main:app --host 0.0.0.0 --port 8000
     ```
 2.  Mobil uygulamanın bu sunucuya erişebilmesi için `mobile/App.js` içindeki IP adresini kendi bilgisayarınızın IP adresiyle değiştirdiğinizden emin olun (Örn: `192.168.1.35`).

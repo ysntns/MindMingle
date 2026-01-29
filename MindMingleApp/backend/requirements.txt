@@ -3,3 +3,6 @@ uvicorn
 pandas
 scikit-learn
 numpy
+fer
+opencv-python-headless
+python-multipart
