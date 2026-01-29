@@ -41,9 +41,16 @@ Eğer Android Studio kurmakla uğraşmak istemiyorsanız bu yöntemi kullanın.
 
 Projenizin içinde hazır bir **Android Kaynak Kodu** (`android` klasörü) oluşturduk.
 
-1.  **Android Studio**'yu açın.
-2.  "Open" diyerek `MindMingleApp/mobile/android` klasörünü seçin.
-3.  Projenin senkronize olmasını bekleyin (Gradle Sync).
+1.  **Hazırlık (Önemli):**
+    Önce terminalden proje klasörüne gidip gerekli paketleri yükleyin:
+    ```bash
+    cd MindMingleApp/mobile
+    npm install
+    ```
+
+2.  **Android Studio**'yu açın.
+3.  "Open" diyerek `MindMingleApp/mobile/android` klasörünü seçin.
+4.  Projenin senkronize olmasını bekleyin (Gradle Sync).
 4.  Üst menüden **Build > Build Bundle(s) / APK(s) > Build APK(s)** yolunu izleyin.
 5.  Derleme bittiğinde sağ altta çıkan bildirime tıklayarak APK dosyasının olduğu klasörü açın (`debug` klasörü içinde olacaktır).
 6.  Bu dosyayı (`app-debug.apk`) telefonunuza atıp kurabilirsiniz.

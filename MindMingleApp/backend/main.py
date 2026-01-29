@@ -92,17 +92,51 @@ def filter_contents(data, mood):
 
     return filtered_data.sample(n=min(5, len(filtered_data)))
 
-def recommend_music(data, features, num_recommendations=5):
+def recommend_music(data, features, mood, num_recommendations=5):
     if data is None or features is None:
         return pd.DataFrame()
 
-    # Güvenlik için features boyutunu kontrol et
     if len(features) == 0:
         return pd.DataFrame()
 
-    index = np.random.randint(0, len(features))
-    cosine_similarities = cosine_similarity(features[index:index + 1], features)
+    # Ruh haline göre uygun "seed" (başlangıç) şarkılarını filtrele
+    # valence_% (mutluluk), energy_% (enerji)
+
+    seed_indices = []
+
+    if mood in ["Çok Mutlu", "Mutlu"]:
+        # Mutlu şarkılar: Yüksek valence, Yüksek enerji
+        subset = data[(data['valence_%'] > 60) & (data['energy_%'] > 50)]
+    elif mood == "Üzgün":
+        # Üzgün şarkılar: Düşük valence
+        subset = data[data['valence_%'] < 40]
+    elif mood == "Keyifli":
+        # Keyifli: Dengeli
+        subset = data[(data['valence_%'] >= 40) & (data['valence_%'] <= 70)]
+    elif mood == "Melankolik":
+        # Melankolik: Düşük enerji, düşük valence
+        subset = data[(data['energy_%'] < 50) & (data['valence_%'] < 50)]
+    else:
+        subset = data
+
+    if not subset.empty:
+        # Filtrelenen şarkılardan rastgele birini seç (seed song)
+        seed_song = subset.sample(n=1)
+        seed_index = seed_song.index[0]
+    else:
+        # Filtreye uyan yoksa tamamen rastgele
+        seed_index = np.random.randint(0, len(features))
+
+    # Seçilen şarkıya en benzerleri bul (Cosine Similarity)
+    # Burada features matrisindeki seed_index'i kullanıyoruz
+    cosine_similarities = cosine_similarity(features[seed_index:seed_index + 1], features)
+
+    # Benzerlik skorlarına göre sırala (kendisi dahil en çok benzeyenler)
     similar_indices = cosine_similarities.argsort().flatten()[-(num_recommendations + 1):-1]
+
+    # Sonuçları tersten sırala (en benzeyen en başta olsun)
+    similar_indices = similar_indices[::-1]
+
     return data.iloc[similar_indices]
 
 @app.post("/recommend")
@@ -110,11 +144,10 @@ def get_recommendations(input_data: MoodInput):
     mood = calculate_mood(input_data.feeling, input_data.activity, input_data.energy, input_data.social)
 
     films = filter_contents(netflix_data, mood)
-    songs = recommend_music(spotify_data, spotify_normalized_features)
+    songs = recommend_music(spotify_data, spotify_normalized_features, mood)
 
     film_list = []
     if not films.empty:
-        # Replace NaN with empty string or handle it
         films = films.fillna("")
         film_list = films[['title', 'listed_in']].to_dict(orient='records')
 
