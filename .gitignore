@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+
+# Environment
+.env
+.venv
+env/
+venv/
+node_modules/
+
+# Mac
+.DS_Store
+
+# Expo
+.expo/
+dist/
+web-build/
