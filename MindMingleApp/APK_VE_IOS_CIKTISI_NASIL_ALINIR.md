@@ -58,6 +58,7 @@ Projenizin içinde hazır bir **Android Kaynak Kodu** (`android` klasörü) olu�
     cd MindMingleApp/mobile
     npm install
     ```
+    *(Eğer `android` klasöründe sorun yaşarsanız `npx expo prebuild --platform android --clean` komutuyla klasörü yeniden oluşturabilirsiniz.)*
 
 2.  **Android Studio**'yu açın.
 3.  "Open" diyerek `MindMingleApp/mobile/android` klasörünü seçin.
@@ -67,6 +68,15 @@ Projenizin içinde hazır bir **Android Kaynak Kodu** (`android` klasörü) olu�
 7.  Bu dosyayı (`app-debug.apk`) telefonunuza atıp kurabilirsiniz.
 
 ---
+
+## Sorun Giderme (Troubleshooting)
+
+Eğer yerel derleme (Local Build) sırasında hata alırsanız:
+
+*   **Java Sürümü:** Bu proje Java 11 veya Java 17 ile en iyi çalışır. Java 21 veya daha yeni sürümler Gradle ile uyumsuzluk yaratabilir.
+    *   Hata Örneği: `Could not get unknown property 'release'` veya `Plugin [...] not found`.
+    *   Çözüm: Java sürümünüzü kontrol edin (`java -version`) ve gerekirse Java 17 yükleyin.
+*   **Gradle Hatası:** Eğer `SDK location not found` hatası alırsanız, `MindMingleApp/mobile/android/local.properties` dosyasına `sdk.dir=/path/to/android/sdk` satırını eklediğinizden emin olun (Android Studio bunu otomatik yapar).
 
 ## Önemli Not: Backend Bağlantısı
 
