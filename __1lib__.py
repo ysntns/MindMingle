@@ -66,7 +66,7 @@ from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 import google.generativeai as genai
-import genai
+# import genai
 import os
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics.pairwise import cosine_similarity
