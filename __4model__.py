@@ -13,6 +13,8 @@
 ########################################################################################################################
 from __3verihazırlama_eda__ import *
 
+df = load_and_preprocess_data()
+
 # Pandas get_dummies fonksiyonunu kullanarak kategorik değişkenleri dönüştürme
 data_encoded = pd.get_dummies(df, columns=['Gender', 'Occupation', 'self_employed', 'family_history', 'treatment',
                                              'Days_Indoors', 'Growing_Stress', 'Changes_Habits', 'Mental_Health_History',
@@ -41,7 +43,7 @@ conditions = [
 choices = ['High', 'Low', 'Medium']
 
 # Numpy'nin select fonksiyonu ile koşullara göre seçim yaparak yeni bir hedef sütunu oluşturma
-data_encoded['Mood_Swings'] = np.select(conditions, choices)
+data_encoded['Mood_Swings'] = np.select(conditions, choices, default='Unknown')
 
 # Bağımsız değişkenler ve yeni hedef değişken
 X = data_encoded.drop(['Mood_Swings_High', 'Mood_Swings_Low', 'Mood_Swings_Medium', 'Mood_Swings'], axis=1)
