@@ -87,14 +87,14 @@ def filter_contents(data, mood):
     filtered_data = pd.DataFrame()
     # case insensitive search and handle NaN
     if mood == "Çok Mutlu" or mood == "Mutlu":
-        filtered_data = data[data['listed_in'].str.contains("Comedy", na=False) | data['listed_in'].str.contains("Animation", na=False)]
+        filtered_data = data[data['listed_in'].str.contains("Comedy|Animation", na=False, regex=True)]
     elif mood == "Üzgün":
-        filtered_data = data[data['listed_in'].str.contains("Drama", na=False) | data['listed_in'].str.contains("Romantic", na=False) | data['listed_in'].str.contains("Comedy", na=False)]
+        filtered_data = data[data['listed_in'].str.contains("Drama|Romantic|Comedy", na=False, regex=True)]
     elif mood == "Keyifli":
-        filtered_data = data[data['listed_in'].str.contains("Family", na=False) | data['listed_in'].str.contains("Documentary", na=False) | data['listed_in'].str.contains("Animation", na=False)]
+        filtered_data = data[data['listed_in'].str.contains("Family|Documentary|Animation", na=False, regex=True)]
     elif mood == "Melankolik":
         filtered_data = data[
-            data['listed_in'].str.contains("Art House", na=False) | data['listed_in'].str.contains("Independent", na=False) | data['listed_in'].str.contains("Drama", na=False)]
+            data['listed_in'].str.contains("Art House|Independent|Drama", na=False, regex=True)]
 
     if filtered_data.empty:
         # Fallback if no specific filter matches or empty result, just return random sample
