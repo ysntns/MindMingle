@@ -2,9 +2,29 @@ from __1lib__ import *
 from sklearn.feature_extraction.text import TfidfVectorizer
 import matplotlib.pyplot as plt
 
-# Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
-netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
-spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
+# Veri yükleme fonksiyonları
+@st.cache_data
+def load_netflix_data():
+    try:
+        return pd.read_csv('netflix.csv')
+    except FileNotFoundError:
+        st.error("Netflix veri seti bulunamadı. Lütfen 'netflix.csv' dosyasını kontrol edin.")
+        return pd.DataFrame()
+
+@st.cache_data
+def load_spotify_data():
+    try:
+        return pd.read_csv('spotify.csv', encoding="ISO-8859-1", sep=",")
+    except FileNotFoundError:
+        st.error("Spotify veri seti bulunamadı. Lütfen 'spotify.csv' dosyasını kontrol edin.")
+        return pd.DataFrame()
+
+# Veri setlerini yükleme
+netflix_data = load_netflix_data()
+spotify_data = load_spotify_data()
+
+if netflix_data.empty or spotify_data.empty:
+    st.stop()
 
 
 
