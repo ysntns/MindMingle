@@ -4,22 +4,33 @@ from __1lib__ import *
 import csv
 import os
 import streamlit as st
+from sklearn.neighbors import NearestNeighbors
 
+st.set_page_config(page_title="MINDMINGLE", layout="wide", initial_sidebar_state="expanded")
 
 # Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
 netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
-spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
 
+@st.cache_data
+def load_spotify_data():
+    spotify_data = pd.read_csv('spotify.csv', encoding="ISO-8859-1", sep=",")
+    spotify_features = spotify_data[
+        ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
+    scaler = MinMaxScaler()
+    spotify_normalized_features = scaler.fit_transform(spotify_features)
+    return spotify_data, spotify_normalized_features
 
+@st.cache_resource
+def train_knn_model(features):
+    model = NearestNeighbors(algorithm='auto', metric='cosine')
+    model.fit(features)
+    return model
 
+spotify_data, spotify_normalized_features = load_spotify_data()
+nn_model = train_knn_model(spotify_normalized_features)
 
 # books_data = pd.read_csv('books.csv')  # Kitap veri seti
 
-# Özellikleri ve modelleri yükleme
-spotify_features = spotify_data[
-    ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
-scaler = MinMaxScaler()
-spotify_normalized_features = scaler.fit_transform(spotify_features)
 tfidf_vectorizer_books = TfidfVectorizer()
 # # NaN değerleri boş string ile değiştir
 # books_data['Book-Title'] = books_data['Book-Title'].fillna('')
@@ -56,10 +67,11 @@ def filter_contents(data, mood):
     return filtered_data.sample(n=min(5, len(filtered_data)))
 
 
-def recommend_music(spotify_data, features, num_recommendations=5):
+def recommend_music(spotify_data, features, model, num_recommendations=5):
     index = np.random.randint(0, len(features))
-    cosine_similarities = cosine_similarity(features[index:index + 1], features)
-    similar_indices = cosine_similarities.argsort().flatten()[-(num_recommendations + 1):-1]
+    distances, indices = model.kneighbors(features[index:index+1], n_neighbors=num_recommendations+1)
+    # Reverse to match original order (least similar of the top K first)
+    similar_indices = indices.flatten()[1:][::-1]
     return spotify_data.iloc[similar_indices]
 
 
@@ -70,7 +82,6 @@ def recommend_music(spotify_data, features, num_recommendations=5):
 #     return books_data.iloc[similar_indices]
 
 
-st.set_page_config(page_title="MINDMINGLE", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
     <style>
     .big-font {
@@ -155,7 +166,7 @@ with st.form("mood_form"):
             st.error("Bugün biraz melankolik takılıyorsun.\nHadi gel film başlıyor.")
 
         filtered_films = filter_contents(netflix_data, mood)
-        recommended_songs = recommend_music(spotify_data, spotify_normalized_features)
+        recommended_songs = recommend_music(spotify_data, spotify_normalized_features, nn_model)
 
         # Önerilen Filmler
         st.subheader("Sizin İçin Önerilen Filmler:")
@@ -172,7 +183,3 @@ with st.form("mood_form"):
                 st.write(f"{row['track_name']} - {row['artist(s)_name']}")
         else:
             st.write("Üzgünüz, bu ruh halinize uygun şarkı bulunamadı.")
-
-
-
-
