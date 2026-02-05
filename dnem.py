@@ -8,18 +8,21 @@ import streamlit as st
 
 # Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
 netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
-spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
 
+@st.cache_data
+def load_and_process_spotify_data():
+    spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
+    # Özellikleri ve modelleri yükleme
+    spotify_features = spotify_data[
+        ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
+    scaler = MinMaxScaler()
+    spotify_normalized_features = scaler.fit_transform(spotify_features)
+    return spotify_data, spotify_normalized_features
 
-
+spotify_data, spotify_normalized_features = load_and_process_spotify_data()
 
 # books_data = pd.read_csv('books.csv')  # Kitap veri seti
 
-# Özellikleri ve modelleri yükleme
-spotify_features = spotify_data[
-    ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
-scaler = MinMaxScaler()
-spotify_normalized_features = scaler.fit_transform(spotify_features)
 tfidf_vectorizer_books = TfidfVectorizer()
 # # NaN değerleri boş string ile değiştir
 # books_data['Book-Title'] = books_data['Book-Title'].fillna('')
@@ -172,7 +175,3 @@ with st.form("mood_form"):
                 st.write(f"{row['track_name']} - {row['artist(s)_name']}")
         else:
             st.write("Üzgünüz, bu ruh halinize uygun şarkı bulunamadı.")
-
-
-
-
