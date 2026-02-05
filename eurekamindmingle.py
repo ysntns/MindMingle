@@ -3,8 +3,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import matplotlib.pyplot as plt
 
 # Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
-netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
-spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
+@st.cache_data
+def load_data():
+    netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
+    spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
+    return netflix_data, spotify_data
+
+netflix_data, spotify_data = load_data()
 
 
 
