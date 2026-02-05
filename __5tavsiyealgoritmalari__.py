@@ -54,13 +54,13 @@ scaler = MinMaxScaler()
 spotify_normalized_features = scaler.fit_transform(spotify_features)
 
 # TF-IDF yerine burada özellik normalleştirme kullanıyoruz
-tfidf_matrix = spotify_normalized_features
+tfidf_matrix_spotify = spotify_normalized_features
 
 # Bir şarkı seçelim, örneğin index olarak 10'u kullanalım
 spotify_index = 10
 
 # Seçilen şarkı için benzerlik skorları hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[spotify_index].reshape(1, -1), tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_spotify[spotify_index].reshape(1, -1), tfidf_matrix_spotify)
 
 # Benzerlik skorlarına göre diğer şarkıları sırala
 similar_tracks = cosine_similarities.argsort().flatten()[-11:-1]
@@ -82,13 +82,13 @@ netflix_data['combined_features'] = netflix_data['description'] + " " + netflix_
 tfidf_vectorizer = TfidfVectorizer()
 
 # Vektörleştirme işlemi
-tfidf_matrix = tfidf_vectorizer.fit_transform(netflix_data['combined_features'])
+tfidf_matrix_netflix = tfidf_vectorizer.fit_transform(netflix_data['combined_features'])
 
 # Bir film/dizi seçelim, örneğin index olarak 1'i kullanalım
 netflix_index = 65
 
 # Seçilen içerik için benzerlik skorları hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[netflix_index], tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_netflix[netflix_index], tfidf_matrix_netflix)
 
 # Benzerlik skorlarına göre diğer içerikleri sırala
 similar_contents = cosine_similarities.argsort().flatten()[-11:-1]
@@ -113,15 +113,15 @@ books_data['combined_features'] = books_data['combined_features'].fillna('')
 tfidf_vectorizer = TfidfVectorizer()
 
 # Vektörleştirme işlemi
-tfidf_matrix = tfidf_vectorizer.fit_transform(books_data['combined_features'])
+tfidf_matrix_books = tfidf_vectorizer.fit_transform(books_data['combined_features'])
 
-print("Vektörleştirme işlemi başarılı:", tfidf_matrix.shape)
+print("Vektörleştirme işlemi başarılı:", tfidf_matrix_books.shape)
 
 # Bir kitap seçelim, örneğin index olarak 0'ı kullanalım
 book_index = 63
 
 # Seçilen kitap için benzerlik skorları hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[book_index], tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_books[book_index], tfidf_matrix_books)
 
 # Benzerlik skorlarına göre diğer kitapları sırala
 similar_books = cosine_similarities.argsort().flatten()[-11:-1]
@@ -143,7 +143,7 @@ print(recommended_books[['Book-Title', 'Book-Author']])
 random_spotify_index = np.random.randint(0, len(spotify_data))
 
 # Seçilen şarkı için benzerlik skorları hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[random_spotify_index].reshape(1, -1), tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_spotify[random_spotify_index].reshape(1, -1), tfidf_matrix_spotify)
 
 # Benzerlik skorlarına göre diğer şarkıları sırala
 similar_tracks_indices = cosine_similarities.argsort().flatten()[-11:-1]
@@ -166,7 +166,7 @@ print(recommended_tracks[['track_name', 'artist(s)_name']])
 random_netflix_index = np.random.randint(0, len(netflix_data))
 
 # Seçilen içerik için benzerlik skorları hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[random_netflix_index], tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_netflix[random_netflix_index], tfidf_matrix_netflix)
 
 # Benzerlik skorlarına göre diğer içerikleri sırala
 similar_contents_indices = cosine_similarities.argsort().flatten()[-11:-1]
@@ -183,13 +183,13 @@ print(recommended_contents[['title', 'listed_in']])
 random_book_index = np.random.randint(0, len(books_data))
 
 # tfidf_matrix'in boyutunu kontrol et
-print("TF-IDF Matris Boyutu:", tfidf_matrix.shape)
+print("TF-IDF Matris Boyutu:", tfidf_matrix_books.shape)
 
 # Rastgele bir kitap indeksi seçimini güvenli bir şekilde yapmak için:
-random_book_index = np.random.randint(0, tfidf_matrix.shape[0])  # 0 ile satır sayısı arasında rastgele bir değer
+random_book_index = np.random.randint(0, tfidf_matrix_books.shape[0])  # 0 ile satır sayısı arasında rastgele bir değer
 
 # Seçilen kitap için benzerlik skorlarını hesapla
-cosine_similarities = cosine_similarity(tfidf_matrix[random_book_index:random_book_index+1], tfidf_matrix)
+cosine_similarities = cosine_similarity(tfidf_matrix_books[random_book_index:random_book_index+1], tfidf_matrix_books)
 
 # İndeksleme ve benzerlik hesaplama işlemini tekrar dene
 print("Rastgele seçilen kitap indeksi:", random_book_index)
@@ -230,8 +230,79 @@ def filter_content_by_mood(mood, filtered_books=None, filtered_movies=None, filt
 
 # Öneri Üretme Fonksiyonu
 def generate_recommendations(filtered_books, filtered_movies, filtered_songs):
-    # İçerik tabanlı öneri algoritmalarını çalıştır
-    pass  # Buraya öneri algoritması kodları gelecek
+    # Helper function to get recommendations
+    def get_content_based_recs(data, text_columns=None, numerical_columns=None, n_recs=5):
+        if data is None or data.empty:
+            return pd.DataFrame()
+
+        # If dataset is small, return it all
+        if len(data) <= n_recs:
+            return data
+
+        # Feature Engineering
+        if text_columns:
+            # Combine text columns
+            combined_text = data[text_columns[0]].astype(str)
+            for col in text_columns[1:]:
+                combined_text = combined_text + " " + data[col].astype(str)
+
+            # TF-IDF
+            # Note: We create a new vectorizer for the filtered subset
+            tfidf = TfidfVectorizer(stop_words='english')
+            try:
+                tfidf_matrix_subset = tfidf.fit_transform(combined_text)
+            except ValueError: # Empty vocabulary etc
+                 return data.sample(n=n_recs)
+
+            # Similarity
+            # Pick a random seed item from the filtered list
+            idx = np.random.randint(0, len(data))
+            cosine_sim = cosine_similarity(tfidf_matrix_subset[idx:idx+1], tfidf_matrix_subset)
+
+            # Get indices
+            sim_scores = list(enumerate(cosine_sim[0]))
+            sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+            # Skip the first one (itself) and get top N
+            sim_indices = [i[0] for i in sim_scores[1:n_recs+1]]
+            return data.iloc[sim_indices]
+
+        elif numerical_columns:
+            features = data[numerical_columns]
+            scaler = MinMaxScaler()
+            normalized_features = scaler.fit_transform(features)
+
+            idx = np.random.randint(0, len(data))
+            cosine_sim = cosine_similarity(normalized_features[idx:idx+1], normalized_features)
+
+            sim_scores = list(enumerate(cosine_sim[0]))
+            sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+            sim_indices = [i[0] for i in sim_scores[1:n_recs+1]]
+            return data.iloc[sim_indices]
+
+        return data.sample(n=n_recs)
+
+    # Apply to Books
+    # Books use 'Book-Title' and 'Book-Author'
+    rec_books = get_content_based_recs(filtered_books, text_columns=['Book-Title', 'Book-Author'])
+
+    # Apply to Movies
+    # Netflix use 'description' and 'listed_in'
+    rec_movies = get_content_based_recs(filtered_movies, text_columns=['description', 'listed_in'])
+
+    # Apply to Songs
+    # Spotify use numerical columns
+    spotify_cols = ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']
+    # Check if columns exist in filtered_songs before using (intersection)
+    if filtered_songs is not None and not filtered_songs.empty:
+         cols = [c for c in spotify_cols if c in filtered_songs.columns]
+         if cols:
+             rec_songs = get_content_based_recs(filtered_songs, numerical_columns=cols)
+         else:
+             rec_songs = filtered_songs.head(5)
+    else:
+        rec_songs = pd.DataFrame()
+
+    return rec_books, rec_movies, rec_songs
 
 # Modelin Kaydedilmesi
 
