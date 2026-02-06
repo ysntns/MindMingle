@@ -6,9 +6,16 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 import cv2
-from fer import FER
+try:
+    from fer import FER
+except ImportError:
+    from fer.fer import FER
 import tempfile
 import shutil
+from dotenv import load_dotenv
+import external_services
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -191,23 +198,58 @@ async def analyze_face(file: UploadFile = File(...)):
 def get_recommendations(input_data: MoodInput):
     mood = calculate_mood(input_data.feeling, input_data.activity, input_data.energy, input_data.social)
 
-    films = filter_contents(netflix_data, mood)
-    songs = recommend_music(spotify_data, spotify_normalized_features, mood)
+    # 1. API'den Çekmeyi Dene
+    tmdb_key = os.getenv("TMDB_API_KEY")
+    spotify_id = os.getenv("SPOTIFY_CLIENT_ID")
+    spotify_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    google_books_key = os.getenv("GOOGLE_BOOKS_API_KEY")
 
+    api_films = external_services.get_tmdb_recommendations(mood, tmdb_key)
+    api_songs = external_services.get_spotify_recommendations(mood, spotify_id, spotify_secret)
+    api_books = external_services.get_google_books_recommendations(mood, google_books_key)
+
+    # 2. Fallback (Yedek) CSV Mantığı
     film_list = []
-    if not films.empty:
-        films = films.fillna("")
-        film_list = films[['title', 'listed_in']].to_dict(orient='records')
+    if api_films:
+        film_list = api_films
+    else:
+        # CSV'den çek
+        films = filter_contents(netflix_data, mood)
+        if not films.empty:
+            films = films.fillna("")
+            # Standardize output format
+            for _, row in films.iterrows():
+                film_list.append({
+                    "title": row['title'],
+                    "subtitle": row['listed_in'], # Use genre as subtitle
+                    "image_url": None, # CSV doesn't have images
+                    "source": "CSV"
+                })
 
     song_list = []
-    if not songs.empty:
-        songs = songs.fillna("")
-        song_list = songs[['track_name', 'artist(s)_name']].to_dict(orient='records')
+    if api_songs:
+        song_list = api_songs
+    else:
+        # CSV'den çek
+        songs = recommend_music(spotify_data, spotify_normalized_features, mood)
+        if not songs.empty:
+            songs = songs.fillna("")
+            for _, row in songs.iterrows():
+                song_list.append({
+                    "title": row['track_name'],
+                    "subtitle": row['artist(s)_name'],
+                    "image_url": None,
+                    "source": "CSV"
+                })
+
+    # Books (CSV fallback yok, sadece API)
+    book_list = api_books if api_books else []
 
     return {
         "mood": mood,
         "films": film_list,
-        "songs": song_list
+        "songs": song_list,
+        "books": book_list
     }
 
 @app.get("/")

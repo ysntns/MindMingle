@@ -6,3 +6,5 @@ numpy
 fer
 opencv-python-headless
 python-multipart
+requests
+python-dotenv
