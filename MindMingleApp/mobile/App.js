@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Dimensions, StatusBar, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Dimensions, StatusBar, Alert, Image } from 'react-native';
 import Slider from '@react-native-community/slider';
 import axios from 'axios';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -219,14 +219,18 @@ export default function App() {
 
             <Text style={styles.recommendationTitle}>🎥 Film Önerileri</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {result.films.length > 0 ? (
+              {result.films && result.films.length > 0 ? (
                 result.films.map((film, index) => (
                   <View key={index} style={styles.mediaCard}>
-                    <View style={styles.mediaIconPlaceholder}>
-                      <Ionicons name="film-outline" size={32} color="#fff" />
-                    </View>
+                    {film.image_url ? (
+                        <Image source={{ uri: film.image_url }} style={styles.mediaImage} resizeMode="cover" />
+                    ) : (
+                        <View style={styles.mediaIconPlaceholder}>
+                            <Ionicons name="film-outline" size={32} color="#fff" />
+                        </View>
+                    )}
                     <Text style={styles.mediaTitle} numberOfLines={2}>{film.title}</Text>
-                    <Text style={styles.mediaSubtitle} numberOfLines={1}>{film.listed_in}</Text>
+                    <Text style={styles.mediaSubtitle} numberOfLines={1}>{film.subtitle || film.listed_in}</Text>
                   </View>
                 ))
               ) : <Text style={styles.noDataText}>Öneri bulunamadı.</Text>}
@@ -234,14 +238,37 @@ export default function App() {
 
             <Text style={styles.recommendationTitle}>🎵 Müzik Önerileri</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {result.songs.length > 0 ? (
+              {result.songs && result.songs.length > 0 ? (
                 result.songs.map((song, index) => (
                   <View key={index} style={styles.mediaCard}>
-                    <View style={[styles.mediaIconPlaceholder, { backgroundColor: '#1DB954' }]}>
-                      <Ionicons name="musical-notes-outline" size={32} color="#fff" />
-                    </View>
-                    <Text style={styles.mediaTitle} numberOfLines={2}>{song.track_name}</Text>
-                    <Text style={styles.mediaSubtitle} numberOfLines={1}>{song['artist(s)_name']}</Text>
+                    {song.image_url ? (
+                        <Image source={{ uri: song.image_url }} style={styles.mediaImage} resizeMode="cover" />
+                    ) : (
+                        <View style={[styles.mediaIconPlaceholder, { backgroundColor: '#1DB954' }]}>
+                            <Ionicons name="musical-notes-outline" size={32} color="#fff" />
+                        </View>
+                    )}
+                    <Text style={styles.mediaTitle} numberOfLines={2}>{song.title || song.track_name}</Text>
+                    <Text style={styles.mediaSubtitle} numberOfLines={1}>{song.subtitle || song['artist(s)_name']}</Text>
+                  </View>
+                ))
+              ) : <Text style={styles.noDataText}>Öneri bulunamadı.</Text>}
+            </ScrollView>
+
+            <Text style={styles.recommendationTitle}>📚 Kitap Önerileri</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+              {result.books && result.books.length > 0 ? (
+                result.books.map((book, index) => (
+                  <View key={index} style={styles.mediaCard}>
+                    {book.image_url ? (
+                        <Image source={{ uri: book.image_url }} style={styles.mediaImage} resizeMode="cover" />
+                    ) : (
+                        <View style={[styles.mediaIconPlaceholder, { backgroundColor: '#FF9800' }]}>
+                            <Ionicons name="book-outline" size={32} color="#fff" />
+                        </View>
+                    )}
+                    <Text style={styles.mediaTitle} numberOfLines={2}>{book.title}</Text>
+                    <Text style={styles.mediaSubtitle} numberOfLines={1}>{book.subtitle}</Text>
                   </View>
                 ))
               ) : <Text style={styles.noDataText}>Öneri bulunamadı.</Text>}
@@ -436,6 +463,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+  },
+  mediaImage: {
+    width: '100%',
+    height: 140, // Taller for posters
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#ddd',
   },
   mediaTitle: {
     fontSize: 14,
