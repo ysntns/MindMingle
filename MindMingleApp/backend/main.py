@@ -6,7 +6,10 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 import cv2
-from fer import FER
+try:
+    from fer import FER
+except ImportError:
+    from fer.fer import FER
 import tempfile
 import shutil
 
