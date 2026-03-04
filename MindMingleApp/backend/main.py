@@ -4,9 +4,14 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
 import os
 import cv2
-from fer import FER
+from functools import lru_cache
+try:
+    from fer import FER
+except ImportError:
+    from fer.fer import FER
 import tempfile
 import shutil
 
@@ -20,10 +25,11 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 netflix_data = None
 spotify_data = None
 spotify_normalized_features = None
+spotify_nn_model = None
 detector = None
 
 def load_data():
-    global netflix_data, spotify_data, spotify_normalized_features, detector
+    global netflix_data, spotify_data, spotify_normalized_features, spotify_nn_model, detector
     try:
         print(f"Loading data from {DATA_DIR}...")
         netflix_path = os.path.join(DATA_DIR, 'netflix.csv')
@@ -45,6 +51,12 @@ def load_data():
                 spotify_features = spotify_data[spotify_features_cols]
                 scaler = MinMaxScaler()
                 spotify_normalized_features = scaler.fit_transform(spotify_features)
+
+                # Precompute NearestNeighbors model for faster recommendations
+                print("Building NearestNeighbors index for Spotify data...")
+                spotify_nn_model = NearestNeighbors(metric='cosine', algorithm='brute')
+                spotify_nn_model.fit(spotify_normalized_features)
+                print("NearestNeighbors index built.")
             else:
                 print("Warning: Missing columns in Spotify data.")
         else:
@@ -80,6 +92,24 @@ def calculate_mood(feeling, activity, energy, social):
     else:
         return "Üzgün"
 
+@lru_cache(maxsize=1024)
+def _get_similar_indices(seed_index: int, num_recommendations: int, num_features: int):
+    features = spotify_normalized_features
+
+    if spotify_nn_model is not None and num_features == spotify_nn_model.n_samples_fit_:
+        # Fast nearest neighbor lookup using precomputed model if available
+        distances, indices = spotify_nn_model.kneighbors(
+            features[seed_index:seed_index + 1],
+            n_neighbors=num_recommendations + 1
+        )
+        return indices.flatten()[1:]
+    else:
+        # Fallback to slower pairwise cosine similarity
+        cosine_similarities = cosine_similarity(features[seed_index:seed_index + 1], features)
+        similar_indices = cosine_similarities.argsort().flatten()[-(num_recommendations + 1):-1]
+        return similar_indices[::-1]
+
+
 def filter_contents(data, mood):
     if data is None:
         return pd.DataFrame()
@@ -109,8 +139,6 @@ def recommend_music(data, features, mood, num_recommendations=5):
     if len(features) == 0:
         return pd.DataFrame()
 
-    seed_indices = []
-
     if mood in ["Çok Mutlu", "Mutlu"]:
         subset = data[(data['valence_%'] > 60) & (data['energy_%'] > 50)]
     elif mood == "Üzgün":
@@ -124,13 +152,12 @@ def recommend_music(data, features, mood, num_recommendations=5):
 
     if not subset.empty:
         seed_song = subset.sample(n=1)
-        seed_index = seed_song.index[0]
+        seed_index = int(seed_song.index[0])
     else:
-        seed_index = np.random.randint(0, len(features))
+        seed_index = int(np.random.randint(0, len(features)))
 
-    cosine_similarities = cosine_similarity(features[seed_index:seed_index + 1], features)
-    similar_indices = cosine_similarities.argsort().flatten()[-(num_recommendations + 1):-1]
-    similar_indices = similar_indices[::-1]
+    # Use cached lookup with precomputed NearestNeighbors / Cosine Similarity
+    similar_indices = _get_similar_indices(seed_index, num_recommendations, len(features))
 
     return data.iloc[similar_indices]
 
