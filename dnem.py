@@ -5,21 +5,26 @@ import csv
 import os
 import streamlit as st
 
+st.set_page_config(page_title="MINDMINGLE", layout="wide", initial_sidebar_state="expanded")
 
-# Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
-netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
-spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
+@st.cache_data
+def load_data():
+    # Örnek veri setleri yükleme, gerçek veri yüklemek için uygun yöntemler kullanılmalı
+    netflix_data = pd.read_csv('netflix.csv')  # Netflix veri seti
+    spotify_data = pd.read_csv('spotify.csv',encoding="ISO-8859-1" , sep="," )  # Spotify veri seti
 
+    # books_data = pd.read_csv('books.csv')  # Kitap veri seti
 
+    # Özellikleri ve modelleri yükleme
+    spotify_features = spotify_data[
+        ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
+    scaler = MinMaxScaler()
+    spotify_normalized_features = scaler.fit_transform(spotify_features)
 
+    return netflix_data, spotify_data, spotify_normalized_features
 
-# books_data = pd.read_csv('books.csv')  # Kitap veri seti
+netflix_data, spotify_data, spotify_normalized_features = load_data()
 
-# Özellikleri ve modelleri yükleme
-spotify_features = spotify_data[
-    ['danceability_%', 'energy_%', 'valence_%', 'acousticness_%', 'instrumentalness_%', 'liveness_%', 'speechiness_%']]
-scaler = MinMaxScaler()
-spotify_normalized_features = scaler.fit_transform(spotify_features)
 tfidf_vectorizer_books = TfidfVectorizer()
 # # NaN değerleri boş string ile değiştir
 # books_data['Book-Title'] = books_data['Book-Title'].fillna('')
@@ -70,7 +75,6 @@ def recommend_music(spotify_data, features, num_recommendations=5):
 #     return books_data.iloc[similar_indices]
 
 
-st.set_page_config(page_title="MINDMINGLE", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
     <style>
     .big-font {
@@ -172,7 +176,3 @@ with st.form("mood_form"):
                 st.write(f"{row['track_name']} - {row['artist(s)_name']}")
         else:
             st.write("Üzgünüz, bu ruh halinize uygun şarkı bulunamadı.")
-
-
-
-
