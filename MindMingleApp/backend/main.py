@@ -135,7 +135,7 @@ def recommend_music(data, features, mood, num_recommendations=5):
     return data.iloc[similar_indices]
 
 @app.post("/analyze-face")
-async def analyze_face(file: UploadFile = File(...)):
+def analyze_face(file: UploadFile = File(...)):
     try:
         # Geçici dosya oluştur
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_image:
